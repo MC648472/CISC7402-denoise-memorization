@@ -218,3 +218,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# 项目数据与产物
+*.npz
+*.pt
+*.ckpt
+data/
+runs/
+outputs/
+
+# 本地临时
+_*.py
+_*.txt
