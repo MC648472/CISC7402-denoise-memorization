@@ -19,7 +19,8 @@ BASE = {1.5: 0.048, 3.0: 0.049}
 def collect(csv):
     m = pd.read_csv(csv)
     dp = m[m.group == "depthsweep"][["radius", "depth", "width", "seed", "nn_ratio"]].copy()
-    fill = m[(m.tag == "mainN40") & (m.cap_idx == 4)][["radius", "seed", "nn_ratio"]].copy()
+    fill = m[(m.tag == "mainN40") & (m.cap_idx == 4) & (m.seed <= 2)][
+        ["radius", "seed", "nn_ratio"]].copy()
     fill["depth"] = 5
     fill["width"] = 512
     dp = pd.concat([dp, fill], ignore_index=True)

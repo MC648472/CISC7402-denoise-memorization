@@ -111,8 +111,8 @@ def main():
     # 深度 × 宽度；宽度 512 的 depth5 用 mainN40 的 (5,512) 补齐
     dp = m[m.group == "depthsweep"][["radius", "depth", "width", "seed", "nn_ratio", "mmd",
                                      "mode_coverage"]]
-    fill = m[(m.tag == "mainN40") & (m.cap_idx == 4)][["radius", "depth", "width", "seed",
-                                                       "nn_ratio", "mmd", "mode_coverage"]]
+    fill = m[(m.tag == "mainN40") & (m.cap_idx == 4) & (m.seed <= 2)][
+        ["radius", "depth", "width", "seed", "nn_ratio", "mmd", "mode_coverage"]]
     fill = fill.assign(depth=5)
     dp = pd.concat([dp, fill], ignore_index=True).drop_duplicates(
         ["radius", "depth", "width", "seed"], keep="last")
