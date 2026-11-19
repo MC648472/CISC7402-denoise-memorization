@@ -36,6 +36,18 @@ def parse(path):
         di, ci, s = map(int, m.groups())
         return dict(tag="main", group="main", dist_idx=di, cap_idx=ci, seed=s,
                     n_train=1000, T=100, depth=CAPS[ci][0], width=CAPS[ci][1])
+    m = re.match(r"depthsweep512_r([\d.]+)_d(\d+)_w(\d+)_s(\d+)", b)
+    if m:
+        r, d, w, s = m.groups()
+        return dict(tag="depthsweep512", group="depthsweep", radius=float(r), seed=int(s),
+                    dist_idx=DISTANCES.index(float(r)) if float(r) in DISTANCES else -1,
+                    cap_idx=-1, n_train=40, T=100, depth=int(d), width=int(w))
+    m = re.match(r"depthsweep_r([\d.]+)_d(\d+)_w(\d+)_s(\d+)", b)
+    if m:
+        r, d, w, s = m.groups()
+        return dict(tag="depthsweep", group="depthsweep", radius=float(r), seed=int(s),
+                    dist_idx=DISTANCES.index(float(r)) if float(r) in DISTANCES else -1,
+                    cap_idx=-1, n_train=40, T=100, depth=int(d), width=int(w))
     m = re.match(r"widthsweep_r([\d.]+)_d(\d+)_w(\d+)_s(\d+)", b)
     if m:
         r, d, w, s = m.groups()
@@ -107,8 +119,8 @@ def main():
     new = pd.DataFrame(rows)
     if a.append and os.path.exists(a.out):
         new = pd.concat([pd.read_csv(a.out), new], ignore_index=True)
-    new = new.drop_duplicates(["tag", "dist_idx", "cap_idx", "seed",
-                                "radius", "width", "n_train"], keep="last")
+    new = new.drop_duplicates(["tag", "dist_idx", "cap_idx", "seed", "radius",
+                                "depth", "width", "n_train", "T"], keep="last")
     new = new.sort_values(["group", "tag", "radius", "n_train", "seed", "cap_idx"])
     new.to_csv(a.out, index=False)
     print(f"已写出 {a.out}: {len(new)} 行")

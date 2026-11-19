@@ -101,12 +101,26 @@ def main():
                               index=False, float_format="%.4g")
 
     w = m[m.tag == "widthsweep"]
-    w.groupby("width").agg(n=("seed", "size"), nn_ratio_mean=("nn_ratio", "mean"),
-                           nn_ratio_sd=("nn_ratio", "std"),
-                           mmd_mean=("mmd", "mean"),
-                           coverage_mean=("mode_coverage", "mean")
-                           ).reset_index().to_csv(os.path.join(a.out, "table_widthsweep.csv"),
-                                                  index=False, float_format="%.4g")
+    w.groupby(["width", "radius"]).agg(
+        n=("seed", "size"), nn_ratio_mean=("nn_ratio", "mean"),
+        nn_ratio_sd=("nn_ratio", "std"), mmd_mean=("mmd", "mean"),
+        coverage_mean=("mode_coverage", "mean")
+    ).reset_index().to_csv(os.path.join(a.out, "table_widthsweep.csv"),
+                           index=False, float_format="%.4g")
+
+    # 深度 × 宽度；宽度 512 的 depth5 用 mainN40 的 (5,512) 补齐
+    dp = m[m.group == "depthsweep"][["radius", "depth", "width", "seed", "nn_ratio", "mmd",
+                                     "mode_coverage"]]
+    fill = m[(m.tag == "mainN40") & (m.cap_idx == 4)][["radius", "depth", "width", "seed",
+                                                       "nn_ratio", "mmd", "mode_coverage"]]
+    fill = fill.assign(depth=5)
+    dp = pd.concat([dp, fill], ignore_index=True).drop_duplicates(
+        ["radius", "depth", "width", "seed"], keep="last")
+    dp.groupby(["radius", "width", "depth"]).agg(
+        n=("seed", "size"), nn_ratio_mean=("nn_ratio", "mean"),
+        nn_ratio_sd=("nn_ratio", "std"), mmd_mean=("mmd", "mean")
+    ).reset_index().to_csv(os.path.join(a.out, "table_depth_width.csv"),
+                           index=False, float_format="%.4g")
 
     ab = m[m.group == "ablN"]
     ab.groupby(["n_train", "radius"]).agg(
