@@ -27,4 +27,4 @@ memorization and generalization of a DDPM on a 2D Gaussian mixture (8 modes equa
 ## Results and data
 - `results/`: summary tables for the denoising-loss gap. `figures/`: figures used in the report.
 - Sample files (.npz) and weights (.pt) are not stored here (size). Contact the authors.
-- Metrics (mode coverage, MMD, nearest-neighbour ratio) and ANOVA: partner's code (to be added under `analysis/`).
+- Metrics (mode coverage, MMD, nearest-neighbour ratio) and ANOVA: partner's code in `code/` (see `README.md`).
