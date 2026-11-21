@@ -35,7 +35,7 @@ def main():
     a = ap.parse_args()
     g = collect(a.csv)
 
-    fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.1), sharey=True)
     for ax, r in zip(axes, (1.5, 3.0)):
         sub = g[g.radius == r]
         for w, style in ((256, dict(marker="o", color="#1f77b4")),
@@ -48,16 +48,16 @@ def main():
             for _, row in s.iterrows():
                 ax.annotate(f"{row['mean']:.3f}", (row.depth, row["mean"]),
                             textcoords="offset points", xytext=(0, 7),
-                            fontsize=6.5, ha="center")
+                            fontsize=7.5, ha="center")
         ax.axhline(BASE[r], ls="--", lw=1, color="0.4")
-        ax.text(6.3, BASE[r] - 0.009, "no-memorisation baseline", fontsize=6.5, color="0.35", ha="right")
-        ax.set_title(f"r = {r}", fontsize=9)
-        ax.set_xlabel("depth (hidden layers)", fontsize=8)
+        ax.text(6.3, BASE[r] - 0.009, "no-memorisation baseline", fontsize=8, color="0.35", ha="right")
+        ax.set_title(f"r = {r}", fontsize=11)
+        ax.set_xlabel("depth (hidden layers)", fontsize=9.5)
         ax.set_xticks(range(1, 7))
         ax.grid(alpha=0.25)
-        ax.legend(fontsize=7, loc="lower right")
-    axes[0].set_ylabel("nn_ratio (mean ± sd over seeds)", fontsize=8)
-    fig.suptitle("Memorisation vs depth at fixed width (n_train=40, 30000 steps)", fontsize=9)
+        ax.legend(fontsize=8.5, loc="lower right")
+    axes[0].set_ylabel("nn_ratio (mean ± sd over seeds)", fontsize=9.5)
+    fig.suptitle("Memorisation vs depth at fixed width (n_train=40, 30000 steps)", fontsize=11)
     fig.tight_layout()
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     fig.savefig(a.out, dpi=200)

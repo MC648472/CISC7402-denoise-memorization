@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-make_grid.py —— A 这一半的"待跑清单"和进度检查。
+"""Build or check the list of runs for one half of the grid.
 
-A 直接用 B 的脚本跑（WHO="A"），脚本自己会写 results_A.csv，格式和 B 的完全一样。
-这个工具只做两件事：
-  plan   生成 75 行清单（距离下标 0,1,2 × 5 容量 × 5 种子），用来核对有没有漏格子
-  check  对照 results_A.csv / metrics.csv，看还缺哪些 npz、哪些指标没算
+plan   writes the expected rows in the same schema as the runner
+check  compares that list with the archives on disk and the metrics file
 
-用法：
-  python make_grid.py plan --dists 1.0,1.5,2.0,3.0,4.5 --dist-idx 0,1,2 \
-      --caps "1:8,2:16,3:64,4:256,5:512" --out ../results_A.csv
-  python make_grid.py check --results ../results_A.csv --metrics ../metrics.csv \
-      --npz-root diffusion_project
+    python make_grid.py plan  --dist-idx 0,1,2 --out results_A.csv
+    python make_grid.py check --results results_A.csv --metrics results/metrics.csv
 """
 import argparse
 import os
@@ -25,14 +19,14 @@ try:
 except Exception:
     pass
 
-# B 的 run_one 写出来的列，顺序一致
+# columns produced by the runner, in the same order
 FIELDS = ["tag", "dist_idx", "cap_idx", "radius", "depth", "width", "params", "seed",
           "n_train", "T", "K", "final_loss", "seconds", "npz_path",
           "mode_coverage", "mmd", "nn_ratio"]
 
 
 def n_params(depth, width, tdim=32):
-    """和 B 的 Denoiser 结构一致：输入 2+tdim，depth 个隐藏层，输出 2。"""
+    """Denoiser layout: 2+tdim inputs, depth hidden layers, 2 outputs."""
     total = (2 + tdim) * width + width
     total += (depth - 1) * (width * width + width)
     total += width * 2 + 2

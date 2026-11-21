@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
-"""memtest 评估：每个 n_train 单独校准 τ，算邻近度，并给出 B 用的中位距离比做对照。
+"""Score the small-sample memorisation test, calibrating tau per n.
 
-用法：
-  python memtest_eval.py --root .\_memtest --out ..\metrics_memtest.csv
+tau comes from the same training set and a fresh draw of the same size, so the
+no-memorisation baseline stays at 0.05 for every n. Coverage is also reported
+against the number of modes that actually appear in the training set, because
+at n=16 some modes receive no training point at all.
 
-对每个文件输出：
-  n, radius, tau, baseline(真实新样本的 P(nn<tau)，应≈0.05),
-  nn_ratio(主指标), nn_med_ratio(B 的中位比), coverage8, coverage_present, mmd
-coverage_present 的分母是"训练集里实际出现过的模式数"——n=16 时会有模式没有任何训练点，
-按 8 个算的话即使完美模型也拿不到 1.0。
+    python memtest_eval.py --root data/memtest --out results/metrics_memtest.csv
 """
 import argparse
 import glob
