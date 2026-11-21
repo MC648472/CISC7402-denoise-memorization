@@ -1,22 +1,14 @@
-"""
-eval_toolkit.py  —— A 同学的评估工具包（v2）
-数据几何结构与模型容量对去噪模型记忆和泛化的影响
+"""Evaluation metrics for the denoising-project runs.
 
-和 v1 的区别（都是为了 B 的 selfcheck_samples.npz 实测出来的问题）：
-  1. SIGMA 不再硬编码为 1.0。B 的数据实测 sigma≈0.298（见 2026-11-17 的 selfcheck），
-     硬编码 1.0 会让 mode_coverage 的半径从 0.9 变成 3.0，小距离档直接饱和、
-     轨迹图的 mode_hit 在 t=0 就变成 0.3。
-     现在按优先级取：npz 里的 sigma 字段 > 从 train 估出来 > SIGMA 默认值。
-  2. .npz 缺 metadata 也能算（用 train 反推），但 check_npz.py 会把缺字段判成 fail，
-     逼 B 补齐 dist / seed / losses，否则 CSV 对不上号。
-  3. 指标仍然是约定的三项：mode_coverage、MMD、nn_ratio。不额外加列。
-  4. calib / target 按 (dist, sigma, seed) 缓存，125 次网格不会重复生成。
+Three metrics: mode coverage, MMD, and nn_ratio (fraction of generated points
+within tau of a training point, tau calibrated per cell). Geometry parameters
+are read from the npz when present, otherwise estimated from the training set.
 
-用法：
-  python eval_toolkit.py selftest
-  python eval_toolkit.py score  selfcheck_samples.npz --dist 3.44
-  python eval_toolkit.py fill   results_A.csv
-  python eval_toolkit.py pilot  results_pilot.csv --cap-col width
+Commands
+    python eval_toolkit.py selftest
+    python eval_toolkit.py score  RUN.npz --dist 3.44
+    python eval_toolkit.py metrics results.csv --npz-root DATA --tags main
+    python eval_toolkit.py pilot  results_pilot.csv --cap-col width
 """
 import argparse
 import math
@@ -33,10 +25,10 @@ except Exception:
     pass
 
 # =====================================================================
-# 0. 全局约定（和 B 对齐后只改这里）
+# 0. Global conventions
 # =====================================================================
-K_MODES = 8            # 高斯混合分量数（B 的 selfcheck 实测 k=8）
-SIGMA = 0.30           # 各分量标准差；B 的 selfcheck 实测 0.298。仅作兜底
+K_MODES = 8            # number of mixture components
+SIGMA = 0.30           # component std; fallback only, normally estimated from data
 N_CALIB = 10000        # 密度校准集大小
 N_TARGET = 10000       # 目标参考集大小
 NN_QUANTILE = 0.05     # 近邻阈值分位数
@@ -53,8 +45,8 @@ def seed_target(s): return 20000 + s
 
 
 # =====================================================================
-# 1. 高斯混合生成器（与 B 的 make_gmm 同一族）
-#    B 的 make_gmm(n, K, radius, sigma, seed) 里，radius 是"环半径"；
+# 1. Gaussian mixture generator
+#    radius is the ring radius; adjacent centres are one chord apart:
 #    相邻两个模式中心的间距（弦长）chord = 2*radius*sin(pi/K)。
 #    K=8 时 chord = 0.7654 * radius。本文件内部一律用 chord，称 dist。
 # =====================================================================
@@ -69,7 +61,7 @@ def gmm_centers(dist, k=K_MODES):
 
 
 def gmm_sample(n, seed, dist=None, k=K_MODES, sigma=None, radius=None):
-    """dist = 相邻中心间距（chord）；也可以直接给 B 的 radius。"""
+    """dist is the chord between adjacent centres; radius may be given instead."""
     if radius is not None:
         dist = chord(radius, k)
     rng = np.random.default_rng(seed)
@@ -266,7 +258,7 @@ def _isnan(x):
 
 def evaluate_run(npz_path, dist=None, seed=None, radius=None, with_traj=False,
                  k=K_MODES):
-    """dist = 相邻中心间距；也可以给 radius（B 的环半径），内部转成 dist。"""
+    """dist is the chord; pass radius to convert from the ring radius."""
     if radius is not None:
         dist = chord(float(radius), k)
     run = load_run(npz_path)
@@ -298,7 +290,7 @@ def validate_npz(npz_path, min_snapshots=8):
 
 
 def _metric_col(df, canonical):
-    """B 的 CSV 用 mmd（小写），A 自己建的表用 MMD，两边都能写。"""
+    """Accept either spelling of the MMD column, lower or upper case."""
     low = canonical.lower()
     if low in df.columns:
         return low
@@ -308,7 +300,7 @@ def _metric_col(df, canonical):
 
 
 def _resolve_path(p, relink):
-    """B 的 npz_path 是他在 Colab 上的绝对路径；用 relink 目录按文件名重定位。"""
+    """Archive paths in the CSVs are absolute; relocate them by basename."""
     if isinstance(p, str) and os.path.exists(p):
         return p
     if relink and isinstance(p, str) and p:
@@ -319,11 +311,11 @@ def _resolve_path(p, relink):
 
 
 METRICS_COLS = ["tag", "dist_idx", "cap_idx", "seed",
-                "mode_coverage", "mmd", "nn_ratio"]      # metrics.csv 的列（B 的约定）
+                "mode_coverage", "mmd", "nn_ratio"]      # columns of metrics.csv
 
 
 def _find_npz(path, npz_root, tag):
-    """B 的 npz_path 是他 Colab 上的绝对路径；按 <npz_root>/<tag>/<文件名> 找本地文件。"""
+    """Resolve an archive path recorded on another machine: try <root>/<tag>/<name>."""
     if isinstance(path, str) and os.path.exists(path):
         return path
     base = os.path.basename(str(path))
@@ -336,8 +328,8 @@ def _find_npz(path, npz_root, tag):
 
 def build_metrics(csvs, out="metrics.csv", npz_root="diffusion_project",
                   tags=None, append=True):
-    """按 B 的约定，从 results_*.csv 读 npz_path，算三项指标，另存 metrics.csv。
-    不改 B 的结果文件；重复运行只补没算过的 (tag, dist_idx, cap_idx, seed)。"""
+    """Read archive paths from the results CSVs and write a separate metrics CSV.
+    The results files are never modified; reruns only fill missing cells."""
     frames = [pd.read_csv(c) for c in csvs]
     df = pd.concat(frames, ignore_index=True)
     if tags:
@@ -441,7 +433,7 @@ def selftest():
     collapsed = gmm_sample(4 * n, 888, dist, sigma=sigma)
     lab = _sqdist(collapsed, c).argmin(1)
     collapsed = collapsed[lab < 3][:n]
-    # 崩塌 B：环化成均匀分布 —— 三个指标里只有 MMD 看得出来
+    # second collapse case: a smeared ring, visible only in MMD
     ang = rng.uniform(0, 2 * np.pi, n)
     rr = np.linalg.norm(c[0]) + sigma * rng.standard_normal(n)
     ring = np.stack([rr * np.cos(ang), rr * np.sin(ang)], 1)

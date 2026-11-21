@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-"""诊断图：B 的 selfcheck_samples.npz 到底学到了什么。
-用法: python make_selfcheck_fig.py <npz> <out.png> [dist]
+"""Diagnostic figure for one run: samples, deviation from the modes, and the
+reverse-diffusion trajectory.
+
+    python make_selfcheck_fig.py RUN.npz out.png [radius]
 """
 import sys
 

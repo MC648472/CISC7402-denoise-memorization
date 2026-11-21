@@ -1,24 +1,16 @@
 # -*- coding: utf-8 -*-
-"""
-check_npz.py —— 验收 B 交来的每个 .npz（单文件，只依赖 numpy）。
+"""Validate a run archive before it enters the statistics.
 
-B 每跑完一个配置就跑一次；A 回填 CSV 之前也跑一次。退出码 0 = 全部通过，1 = 有问题。
+Checks array shapes, finiteness, the sampling contract (traj[0] is noise,
+traj[-1] equals final) and, when present, the metadata scalars.
+Exit code 0 if every file passes, 1 otherwise.
 
-用法：
-  python check_npz.py selfcheck_samples.npz            # 只验收
-  python check_npz.py selfcheck_samples.npz --infer    # 顺便反推 k / dist / sigma
-  python check_npz.py runs/                            # 扫整个目录
-  python check_npz.py runs/ --quiet                    # 只打印失败项
+    python check_npz.py RUN.npz              # validate
+    python check_npz.py RUN.npz --infer      # also infer k / radius / sigma
+    python check_npz.py runs/ --quiet        # whole directory, failures only
 
-约定（和 A 对齐，18 日冻结后不再改）：
-  数组  final (n,2)         生成样本
-        traj  (T,n,2)       反向扩散快照，T>=8，traj[0]=纯噪声，traj[-1]=final
-        train (m,2)         训练集
-        losses (L,)         每步/每若干步的训练损失
-  标量  dist, seed          必须；建议再加 width, depth, n_train, sigma, dist_idx, k
-  文件名 d{距离下标}_w{宽度}_s{种子}.npz
-
-反推部分只在缺 metadata 时用；有 metadata 就以声明值为准（会打出来核对）。
+Expected arrays: final (n,2), traj (T,n,2), train (m,2), losses (L,).
+Expected scalars: dist and seed; width/depth/n_train/sigma recommended.
 """
 import argparse
 import glob

@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
-"""把 B 交来的各个文件夹统一算成一张 tidy 表（metrics_all.csv）。
+"""Score every run in a directory tree and write one tidy CSV.
 
-支持的文件名：
-  mainN40_d{di}_c{ci}_s{seed}.npz                  n=40, T=100, 冻结五档容量
-  memtest_n{N}_d{di}_c{ci}_s{seed}.npz             n=N,  T=100
-  ablN{N}_r{radius}_d{depth}_w{width}_s{seed}.npz  n=N,  T=100
-  abl_T{T}_d{di}_c{ci}_s{seed}.npz                 n=1000, T=T
+Filenames are parsed for tag, distance index, capacity index, depth, width and
+seed; metrics come from eval_toolkit. Recognised patterns:
 
-用法： python eval_all.py --roots _B_new _A_mainN40 --out metrics_all.csv
+    main_d{di}_c{ci}_s{seed}.npz
+    mainN40_d{di}_c{ci}_s{seed}.npz
+    widthsweep_r{r}_d{d}_w{w}_s{seed}.npz
+    depthsweep[_512]_r{r}_d{d}_w{w}_s{seed}.npz
+    ablN{n}_r{r}_d{d}_w{w}_s{seed}.npz
+    abl_T{T}_d{di}_c{ci}_s{seed}.npz
+    memtest_n{n}_d{di}_c{ci}_s{seed}.npz
+
+    python eval_all.py --roots data/main data/mainN40 --out results/metrics.csv
 """
 import argparse
 import glob

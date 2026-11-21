@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
-"""按 B 的 math.ipynb 原样复现 pilot2（本机没有网盘里的 npz，先复现一份等价数据）。
+"""Re-run the training loop locally (CPU) with the same model and data code.
 
-和 B 的代码一致：make_gmm / Denoiser / DDPM / train / sample 逐行照抄，
-只把输出改到本地目录，并在 npz 里补上 radius / dist / seed 方便我这边评估。
-注意：torch 在 CPU 和 CUDA 上的随机流不同，数值不会和 B 的文件逐位相同，
-但同一配置、同一 seed 的分布行为一致，够用来判断"崩塌区间/饱和点"。
+Useful when the original archives are unavailable. torch uses different random
+streams on CPU and CUDA, so results are statistically rather than bit-wise
+comparable with the GPU runs.
 
-用法：
-  python pilot_repro.py --iters 3000 --out %TEMP%\pilot2_r3000
-  python pilot_repro.py --iters 10000 --out %TEMP%\pilot2_r10000 --radius 2.0
+    python pilot_repro.py --iters 30000 --n-train 40 --radius 1.5 --cap 2 --out ./runs
 """
 import argparse
 import math
